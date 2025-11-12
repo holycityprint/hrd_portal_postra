@@ -19,7 +19,7 @@ login_manager.login_message_category = "info"
 @login_manager.user_loader
 def load_user(user_id):
     """Dipanggil oleh Flask-Login untuk memuat user aktif berdasarkan ID."""
-    from app.models import User  # Menghindari circular import
+    from app.models import User  # Hindari circular import
     return User.query.get(int(user_id))
 
 
@@ -34,17 +34,19 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hrd_portal.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # -------------------- Konfigurasi tambahan untuk login mobile --------------------
-    # Pastikan cookie dikirim juga di browser HP (terutama Chrome/Safari)
-    app.config["SESSION_COOKIE_SECURE"] = True           # wajib True untuk HTTPS (Render)
-    app.config["SESSION_COOKIE_SAMESITE"] = "None"       # agar cookie tidak diblokir mobile browser
-    app.config["SESSION_COOKIE_HTTPONLY"] = True
-    app.config["REMEMBER_COOKIE_SECURE"] = True
-    app.config["REMEMBER_COOKIE_SAMESITE"] = "None"
-    app.config["REMEMBER_COOKIE_HTTPONLY"] = True
-
-    # 🔧 tambahan opsional — beberapa browser mobile perlu nama domain eksplisit
-    app.config["SESSION_COOKIE_DOMAIN"] = None  # biarkan Flask isi otomatis agar sesuai domain render
+    # ==========================================================
+    # 🔐 Konfigurasi agar login tetap bekerja di HP / mobile browser
+    # ==========================================================
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,            # wajib True untuk HTTPS
+        SESSION_COOKIE_SAMESITE="None",        # izinkan cookie lintas domain
+        SESSION_COOKIE_HTTPONLY=True,
+        REMEMBER_COOKIE_SECURE=True,
+        REMEMBER_COOKIE_SAMESITE="None",
+        REMEMBER_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_DOMAIN=None,            # auto ikuti domain render
+        PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 7  # 7 hari login aktif
+    )
 
     # Folder upload + batas ukuran file upload
     app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
@@ -56,13 +58,13 @@ def create_app():
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==========================================================
-    # 🌐 CORS diaktifkan penuh untuk dukung login via HP
+    # 🌐 CORS — dukung akses dari semua domain (Render, APK, localhost)
     # ==========================================================
     CORS(
         app,
         supports_credentials=True,
-        origins=["*"],  # izinkan akses dari semua domain (Render, localhost, HP)
-        allow_headers=["Content-Type", "Authorization"],
+        resources={r"/*": {"origins": ["*", "https://*.onrender.com", "http://localhost:*"]}},
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
 
