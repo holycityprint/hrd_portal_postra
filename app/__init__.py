@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from werkzeug.middleware.proxy_fix import ProxyFix   # ✅ Tambahan penting
 import os
 
 # ==========================================================
@@ -28,16 +29,21 @@ def load_user(user_id):
 def create_app():
     app = Flask(__name__)
 
+    # ✅ Beri tahu Flask bahwa koneksi lewat HTTPS (via proxy Render)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
     # -------------------- Konfigurasi dasar --------------------
     app.config["SECRET_KEY"] = "kuncirahasia_superaman"
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hrd_portal.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # --- Konfigurasi cookies disederhanakan (seperti Holycity Portal) ---
-    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    app.config["SESSION_COOKIE_SECURE"] = False
-    app.config["REMEMBER_COOKIE_SAMESITE"] = "Lax"
-    app.config["REMEMBER_COOKIE_SECURE"] = False
+    # --- Konfigurasi cookie aman & kompatibel mobile ---
+    app.config["SESSION_COOKIE_SAMESITE"] = "None"
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_HTTPONLY"] = False
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "None"
+    app.config["REMEMBER_COOKIE_SECURE"] = True
+    app.config["REMEMBER_COOKIE_HTTPONLY"] = False
 
     # Folder upload + batas ukuran file upload
     app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
@@ -51,22 +57,15 @@ def create_app():
     # ==========================================================
     # 🔹 REGISTRASI BLUEPRINTS
     # ==========================================================
-
-    # -- Halaman utama (dashboard umum)
     from app.routes import main_bp
     app.register_blueprint(main_bp)
 
-    # -- Modul autentikasi (login/logout)
     from app.auth.routes import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
 
-    # -- Modul HR
     from app.hr.routes import hr_bp
     app.register_blueprint(hr_bp, url_prefix="/hr")
 
-    # ----------------------------------------------------------
-    # 🏢 Modul Client (📌 inilah yang memastikan /client tampil)
-    # ----------------------------------------------------------
     try:
         from app.client.routes import client_bp
         app.register_blueprint(client_bp, url_prefix="/client")
@@ -74,18 +73,15 @@ def create_app():
     except Exception as e:
         print(f"⚠️  Gagal memuat blueprint Client: {e}")
 
-    # -- Modul Employee
     from app.employee.routes import employee_bp
     app.register_blueprint(employee_bp, url_prefix="/employee")
 
-    # 🟢 Portal Input Data Karyawan (opsional)
     try:
         from app.employee.routes_input import employee_input_bp
         app.register_blueprint(employee_input_bp, url_prefix="/employee/input")
     except ModuleNotFoundError:
         print("ℹ️ Modul input data karyawan belum tersedia, dilewati sementara.")
 
-    # -- Modul Admin (opsional)
     try:
         from app.admin.routes import admin_bp
         app.register_blueprint(admin_bp, url_prefix="/admin")
