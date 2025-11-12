@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import User
-from app.role_check import role_required
+from app.role_check import role_required # Asumsi ini masih digunakan
 
 # ======================================================
 # 🔐 Blueprint AUTH – Login & Logout
@@ -19,15 +19,19 @@ def login():
         return redirect_user_by_role(current_user)
 
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        # >>> PERUBAHAN KRITIS: Hapus spasi di awal/akhir input
+        username = request.form.get('username').strip()
+        password = request.form.get('password').strip()
+        # <<< AKHIR PERUBAHAN KRITIS
 
         user = User.query.filter_by(username=username).first()
 
         if not user:
+            # Menggunakan username yang sudah di-strip untuk pengecekan
             flash('❌ Username tidak ditemukan.', 'danger')
             return render_template('auth/login.html')
 
+        # Membandingkan password yang sudah di-strip
         if not user.check_password(password):
             flash('❌ Password salah.', 'danger')
             return render_template('auth/login.html')
@@ -37,8 +41,15 @@ def login():
             return render_template('auth/login.html')
 
         # Login berhasil
-        login_user(user)
+        # Parameter 'remember' bisa ditambahkan di sini jika ada checkbox di form
+        login_user(user) 
         flash(f'✅ Selamat datang, {user.username}!', 'success')
+        
+        # Cek apakah ada parameter 'next' dari URL, jika tidak, gunakan role redirect
+        next_page = request.args.get('next')
+        if next_page:
+            return redirect(next_page)
+        
         return redirect_user_by_role(user)
 
     # GET → tampilkan halaman login
@@ -61,6 +72,7 @@ def logout():
 # ------------------------------------------------------
 def redirect_user_by_role(user):
     """Arahkan user ke dashboard sesuai role-nya."""
+    # Pastikan nama endpoint (seperti 'admin.dashboard_admin') sesuai dengan yang ada di routes Anda.
     if user.role == 'admin':
         return redirect(url_for('admin.dashboard_admin'))
     elif user.role == 'hr':
