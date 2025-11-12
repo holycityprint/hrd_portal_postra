@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from flask_cors import CORS
 import os
 
 # ==========================================================
@@ -10,7 +9,7 @@ import os
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-# --- Konfigurasi default Flask-Login ---
+# --- Konfigurasi default Flask‑Login ---
 login_manager.login_view = "auth.login"
 login_manager.login_message = "Silakan login terlebih dahulu untuk mengakses halaman ini."
 login_manager.login_message_category = "info"
@@ -18,8 +17,8 @@ login_manager.login_message_category = "info"
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Dipanggil oleh Flask-Login untuk memuat user aktif berdasarkan ID."""
-    from app.models import User  # Hindari circular import
+    """Dipanggil oleh Flask‑Login untuk memuat user aktif berdasarkan ID."""
+    from app.models import User  # Menghindari circular import
     return User.query.get(int(user_id))
 
 
@@ -34,21 +33,11 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hrd_portal.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # ==========================================================
-    # 🔐 Konfigurasi Session agar login bekerja di HP & HTTPS
-    # ==========================================================
-    app.config.update(
-        SESSION_COOKIE_SECURE=True,            # Cookie hanya dikirim via HTTPS
-        SESSION_COOKIE_SAMESITE="None",        # Cookie diterima lintas domain (Safari fix)
-        SESSION_COOKIE_HTTPONLY=True,          # Lindungi cookie dari akses JS
-        REMEMBER_COOKIE_SECURE=True,
-        REMEMBER_COOKIE_SAMESITE="None",
-        REMEMBER_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_DOMAIN=None,            # 🔧 Perubahan penting: biarkan otomatis
-        PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 7,  # 7 hari login aktif
-        SESSION_PROTECTION="strong",
-        SESSION_REFRESH_EACH_REQUEST=True
-    )
+    # --- Konfigurasi cookies disederhanakan (seperti Holycity Portal) ---
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = False
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "Lax"
+    app.config["REMEMBER_COOKIE_SECURE"] = False
 
     # Folder upload + batas ukuran file upload
     app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
@@ -60,45 +49,24 @@ def create_app():
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==========================================================
-    # 🌐 CORS — diperbaiki agar aman & kompatibel mobile
-    # ==========================================================
-    CORS(
-        app,
-        supports_credentials=True,
-        resources={r"/*": {"origins": [
-            "https://hrd-portal-postra.onrender.com",
-            "http://localhost:5000",
-            "http://127.0.0.1:5000"
-        ]}},
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        expose_headers=["Content-Type", "Authorization"]
-    )
-
-    # ==========================================================
-    # 🧩 Tambahkan middleware tambahan agar CORS & cookie sinkron
-    # ==========================================================
-    @app.after_request
-    def after_request(response):
-        """Middleware untuk handle CORS preflight & cookie di mobile"""
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Requested-With,Accept"
-        response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS,PATCH"
-        response.headers["Access-Control-Max-Age"] = "600"
-        return response
-
-    # ==========================================================
     # 🔹 REGISTRASI BLUEPRINTS
     # ==========================================================
+
+    # -- Halaman utama (dashboard umum)
     from app.routes import main_bp
     app.register_blueprint(main_bp)
 
+    # -- Modul autentikasi (login/logout)
     from app.auth.routes import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
 
+    # -- Modul HR
     from app.hr.routes import hr_bp
     app.register_blueprint(hr_bp, url_prefix="/hr")
 
+    # ----------------------------------------------------------
+    # 🏢 Modul Client (📌 inilah yang memastikan /client tampil)
+    # ----------------------------------------------------------
     try:
         from app.client.routes import client_bp
         app.register_blueprint(client_bp, url_prefix="/client")
@@ -106,15 +74,18 @@ def create_app():
     except Exception as e:
         print(f"⚠️  Gagal memuat blueprint Client: {e}")
 
+    # -- Modul Employee
     from app.employee.routes import employee_bp
     app.register_blueprint(employee_bp, url_prefix="/employee")
 
+    # 🟢 Portal Input Data Karyawan (opsional)
     try:
         from app.employee.routes_input import employee_input_bp
         app.register_blueprint(employee_input_bp, url_prefix="/employee/input")
     except ModuleNotFoundError:
         print("ℹ️ Modul input data karyawan belum tersedia, dilewati sementara.")
 
+    # -- Modul Admin (opsional)
     try:
         from app.admin.routes import admin_bp
         app.register_blueprint(admin_bp, url_prefix="/admin")
@@ -122,32 +93,31 @@ def create_app():
         pass
 
     # ==========================================================
-    # 🧪 Debug endpoint (cek dari HP)
-    # ==========================================================
-    @app.route("/api/debug/mobile-session")
-    def debug_mobile_session():
-        from flask import session, request, jsonify
-        return jsonify({
-            "session_keys": list(session.keys()),
-            "cookies": bool(request.cookies),
-            "origin": request.headers.get("Origin", ""),
-            "user_agent": request.headers.get("User-Agent", ""),
-        })
-
-    # ==========================================================
     # 🔹 ERROR HANDLER UMUM
     # ==========================================================
     @app.errorhandler(404)
     def not_found_error(error):
-        return "<h3 style='text-align:center;margin-top:40px'>Halaman tidak ditemukan (404)</h3>", 404
+        return (
+            "<h3 style='text-align:center;margin-top:40px'>"
+            "Halaman tidak ditemukan (404)</h3>",
+            404,
+        )
 
     @app.errorhandler(401)
     def unauthorized_error(error):
-        return "<h3 style='text-align:center;margin-top:40px'>Anda belum login atau tidak memiliki izin (401)</h3>", 401
+        return (
+            "<h3 style='text-align:center;margin-top:40px'>"
+            "Anda belum login atau tidak memiliki izin (401)</h3>",
+            401,
+        )
 
     @app.errorhandler(500)
     def internal_error(error):
-        return "<h3 style='text-align:center;margin-top:40px'>Terjadi kesalahan pada server (500)</h3>", 500
+        return (
+            "<h3 style='text-align:center;margin-top:40px'>"
+            "Terjadi kesalahan pada server (500)</h3>",
+            500,
+        )
 
     # ==========================================================
     # 🔹 INISIALISASI AKUN DEFAULT
@@ -156,7 +126,7 @@ def create_app():
         try:
             init_default_accounts()
         except Exception as e:
-            print(f"ℹ️ Tidak dapat membuat akun default: {e}")
+            print(f"ℹ️  Tidak dapat membuat akun default: {e}")
 
     return app
 
@@ -192,4 +162,4 @@ def init_default_accounts():
         print("✅ Default users initialized (admin / employee / client).")
 
     except OperationalError:
-        print("ℹ️ Database belum siap, akun default dilewati sementara.")
+        print("ℹ️  Database belum siap, akun default dilewati sementara.")
