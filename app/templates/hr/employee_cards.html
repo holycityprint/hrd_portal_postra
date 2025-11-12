@@ -1,0 +1,169 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container-fluid mt-3 mb-5">
+
+  <!-- 🔍 Bagian Atas: Judul + Pencarian + Form Tambah -->
+  <div class="row align-items-center mb-4">
+    <div class="col-md-6">
+      <h4 class="fw-bold text-primary mb-3">
+        <i class="bi bi-people-fill"></i> Data Karyawan
+      </h4>
+    </div>
+
+    <!-- search -->
+    <div class="col-md-4 ms-auto mb-2 mb-md-0">
+      <input type="search" id="searchBox" class="form-control" placeholder="Cari nama karyawan...">
+    </div>
+  </div>
+
+  <!-- ✏️ Form Tambah Karyawan -->
+  <form method="POST" enctype="multipart/form-data" class="row g-3 mb-4 shadow-sm p-3 bg-white rounded">
+    <div class="col-md-3">
+      <input type="text" name="name" class="form-control" placeholder="Nama" required>
+    </div>
+    <div class="col-md-2">
+      <input type="text" name="position" class="form-control" placeholder="Posisi">
+    </div>
+    <div class="col-md-2">
+      <select name="job_type" class="form-select" required>
+        <option value="">Pilih Job Type</option>
+        <option value="security">Security</option>
+        <option value="cleaning">Cleaning</option>
+        <option value="driver">Driver</option>
+        <option value="helper">Helper</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="client_id" class="form-select" required>
+        <option value="">-- Pilih Client --</option>
+        {% for c in clients %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <input type="file" name="photo" class="form-control" accept="image/*">
+    </div>
+
+    <div class="col-md-12 text-end">
+      <button class="btn btn-primary" type="submit">
+        <i class="bi bi-person-plus"></i> Tambah Karyawan
+      </button>
+    </div>
+  </form>
+
+  <!-- 🔖 Layout dua kolom -->
+  <div class="row">
+    <!-- Sidebar kiri: Departemen / Job Type -->
+    <div class="col-md-3 col-lg-2 mb-3">
+      <div class="list-group shadow-sm sticky-md-top">
+        <div class="list-group-item active">
+          <i class="bi bi-diagram-2"></i> Departemen
+        </div>
+        <a href="#" class="list-group-item list-group-item-action">Semua</a>
+        <a href="#" class="list-group-item list-group-item-action">Security</a>
+        <a href="#" class="list-group-item list-group-item-action">Cleaning</a>
+        <a href="#" class="list-group-item list-group-item-action">Driver</a>
+        <a href="#" class="list-group-item list-group-item-action">Helper</a>
+      </div>
+    </div>
+
+    <!-- Kolom kanan: Grid kartu karyawan -->
+    <div class="col-md-9 col-lg-10">
+      <div class="row g-3" id="employeeList">
+        {% for e in employees %}
+        <div class="col-sm-6 col-md-4 col-lg-3 employee-card">
+          <div class="card h-100 shadow-sm border-0">
+            
+            <!-- Bagian body: Klik = buka detail aktivitas -->
+            <div class="card-body text-center employee-clickable"
+                 onclick="window.location.href='{{ url_for('hr.employee_details', id=e.id) }}'"
+                 style="cursor:pointer;">
+              <img src="{{ url_for('static', filename='uploads/' ~ e.photo) }}"
+                   onerror="this.onerror=null;this.src='{{ url_for('static', filename='img/default_user.png') }}';"
+                   alt="Foto" class="rounded-circle mb-2"
+                   width="80" height="80"
+                   style="object-fit:cover; border:3px solid #eef1f3;">
+
+              <h6 class="fw-bold text-primary mb-0">{{ e.name }}</h6>
+              <small class="text-muted mb-1 d-block">{{ e.position or '-' }}</small>
+
+              <!-- 🌐 Tambahan: tampilkan nama PT (Client) -->
+              {% if e.client %}
+                <div class="text-muted small">PT: {{ e.client.name }}</div>
+              {% else %}
+                <div class="text-muted small">PT: - (belum ditetapkan)</div>
+              {% endif %}
+
+              <div class="small text-muted">
+                <i class="bi bi-briefcase"></i> {{ e.job_type|capitalize }}
+              </div>
+
+              <div class="mt-2">
+                <span class="badge {{ 'bg-success' if e.status == 'aktif' else 'bg-secondary' }}">
+                  {{ e.status }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Bagian bawah: aksi -->
+            <div class="card-footer bg-light text-center">
+              <!-- ✅ Tombol Absen -->
+              <a href="{{ url_for('hr.employee_attendance_page', employee_id=e.id) }}"
+                 class="btn btn-outline-success btn-sm me-1" title="Absen (Clock In / Clock Out)">
+                <i class="bi bi-clock"></i>
+              </a>
+
+              <!-- Tombol Edit -->
+              <a href="{{ url_for('hr.edit_employee', id=e.id) }}"
+                 class="btn btn-outline-primary btn-sm me-1" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+
+              <!-- Tombol Hapus -->
+              <form method="POST"
+                    action="{{ url_for('hr.delete_employee', id=e.id) }}"
+                    style="display:inline;">
+                <button type="submit"
+                        class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Yakin ingin menghapus {{ e.name }}?')"
+                        title="Hapus">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted py-5">
+          <i class="bi bi-exclamation-circle"></i> Belum ada data karyawan.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🔎 Pencarian realtime -->
+<script>
+  const searchBox = document.getElementById('searchBox');
+  const employees = document.querySelectorAll('.employee-card');
+  searchBox.addEventListener('input', function() {
+    const term = this.value.toLowerCase();
+    employees.forEach(card => {
+      const name = card.innerText.toLowerCase();
+      card.style.display = name.includes(term) ? '' : 'none';
+    });
+  });
+</script>
+
+<!-- Style tambahan kecil untuk hover -->
+<style>
+  .employee-clickable:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+  }
+</style>
+
+{% endblock %}

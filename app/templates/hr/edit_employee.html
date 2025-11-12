@@ -1,0 +1,79 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container mt-4 mb-5">
+  <h4 class="fw-bold text-primary mb-4">
+    <i class="bi bi-pencil-square"></i> Edit Data Karyawan
+  </h4>
+
+  <!-- enctype wajib untuk upload file -->
+  <form method="POST" enctype="multipart/form-data" class="row g-3">
+
+    <!-- Nama -->
+    <div class="col-md-6">
+      <label class="form-label">Nama</label>
+      <input type="text" name="name" value="{{ employee.name }}" class="form-control" required>
+    </div>
+
+    <!-- Posisi -->
+    <div class="col-md-6">
+      <label class="form-label">Posisi</label>
+      <input type="text" name="position" value="{{ employee.position or '' }}" class="form-control">
+    </div>
+
+    <!-- Job Type -->
+    <div class="col-md-4">
+      <label class="form-label">Jenis Pekerjaan</label>
+      <select name="job_type" class="form-select" required>
+        <option value="">-- Pilih --</option>
+        <option value="security" {% if employee.job_type == 'security' %}selected{% endif %}>Security</option>
+        <option value="cleaning" {% if employee.job_type == 'cleaning' %}selected{% endif %}>Cleaning</option>
+        <option value="driver" {% if employee.job_type == 'driver' %}selected{% endif %}>Driver</option>
+        <option value="helper" {% if employee.job_type == 'helper' %}selected{% endif %}>Helper</option>
+      </select>
+    </div>
+
+    <!-- Client -->
+    <div class="col-md-4">
+      <label class="form-label">Client</label>
+      <select name="client_id" class="form-select">
+        {% for c in clients %}
+        <option value="{{ c.id }}" {% if employee.client_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Status -->
+    <div class="col-md-4">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select" required>
+        <option value="aktif" {% if employee.status == 'aktif' %}selected{% endif %}>Aktif</option>
+        <option value="standby" {% if employee.status == 'standby' %}selected{% endif %}>Standby</option>
+        <option value="resigned" {% if employee.status == 'resigned' %}selected{% endif %}>Resigned</option>
+      </select>
+    </div>
+
+    <!-- Foto -->
+    <div class="col-md-6">
+      <label class="form-label">Foto Karyawan (opsional)</label>
+      <input type="file" name="photo" class="form-control" accept="image/*">
+      {% if employee.photo %}
+      <div class="mt-2 text-center">
+        <img src="{{ url_for('static', filename='uploads/' ~ employee.photo) }}"
+             alt="Foto" width="100" height="100"
+             class="rounded shadow-sm" style="object-fit:cover;">
+        <div class="text-muted small mt-1">Foto saat ini</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-12 text-center mt-3">
+      <button class="btn btn-success px-4" type="submit">
+        <i class="bi bi-save"></i> Simpan Perubahan
+      </button>
+      <a href="{{ url_for('hr.manage_employees') }}" class="btn btn-secondary px-4">
+        <i class="bi bi-x-circle"></i> Batal
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<h3 class="fw-bold text-primary mb-4">
+  <i class="bi bi-speedometer2"></i> Dashboard HR Development
+</h3>
+
+<div class="row g-4">
+  <!-- Total Karyawan -->
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center">
+        <div class="display-6 text-primary"><i class="bi bi-people-fill"></i></div>
+        <h5 class="fw-bold mt-2">Total Karyawan</h5>
+        <p class="lead fw-bold text-primary mb-1">{{ total_employees }}</p>
+        <small class="text-muted d-block mb-3">Jumlah seluruh karyawan</small>
+        <a href="{{ url_for('hr.manage_employees') }}" 
+           class="btn btn-outline-primary btn-sm w-100">Lihat Data</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Karyawan Aktif -->
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center">
+        <div class="display-6 text-success"><i class="bi bi-person-check-fill"></i></div>
+        <h5 class="fw-bold mt-2">Karyawan Aktif</h5>
+        <p class="lead fw-bold text-success mb-1">{{ active_employees }}</p>
+        <small class="text-muted d-block mb-3">Status aktif bekerja</small>
+        <a href="{{ url_for('hr.manage_employees') }}" 
+           class="btn btn-outline-success btn-sm w-100">Lihat Data</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Aktif -->
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center">
+        <div class="display-6 text-info"><i class="bi bi-building"></i></div>
+        <h5 class="fw-bold mt-2">Client Aktif</h5>
+        <p class="lead fw-bold text-info mb-1">{{ total_clients }}</p>
+        <small class="text-muted d-block mb-3">Semua client terdaftar</small>
+        <a href="{{ url_for('hr.manage_clients') }}" 
+           class="btn btn-outline-info btn-sm w-100">Lihat Data</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Penugasan Aktif -->
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center">
+        <div class="display-6 text-warning"><i class="bi bi-truck"></i></div>
+        <h5 class="fw-bold mt-2">Penugasan Aktif</h5>
+        <p class="lead fw-bold text-warning mb-1">{{ total_assignments }}</p>
+        <small class="text-muted d-block mb-3">Jumlah penempatan berjalan</small>
+        <a href="{{ url_for('hr.operation_dashboard') }}" 
+           class="btn btn-outline-warning btn-sm w-100">Lihat Data</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

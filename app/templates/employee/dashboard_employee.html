@@ -1,0 +1,157 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<style>
+  .emp-header {
+    background-color: #b12b2b;
+    color: #fff;
+    border-radius: 0 0 20px 20px;
+    padding: 1.5rem 1rem 3.5rem 1rem;
+    text-align: center;
+  }
+  .emp-header img {
+    width: 75px; height: 75px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+  }
+  .emp-card { margin-top: -50px; border-radius: 15px; }
+  label.text-muted { font-size: 0.85rem; }
+  .list-group-item img {
+    width: 90px; height: 90px;
+    object-fit: cover; border-radius: 10px;
+  }
+</style>
+
+<div class="emp-header">
+  <h6 class="opacity-75 mb-1">
+    {{ employee.client.name if employee.client else "PMM Portal" }}
+  </h6>
+  <h4 class="fw-semibold mb-0">{{ employee.name }}</h4>
+  <div class="small">{{ employee.position or '-' }}</div>
+  <img src="{{ url_for('static', filename='uploads/' ~ (employee.photo or 'default_user.png')) }}"
+       alt="foto" class="mt-2">
+</div>
+
+<div class="container px-3">
+
+  <!-- ===================================================== -->
+  <!-- JADWAL KERJA & ABSENSI -->
+  <!-- ===================================================== -->
+  <div class="card shadow-sm emp-card">
+    <div class="card-body text-center">
+      <div class="d-flex justify-content-between">
+        <div><i class="bi bi-calendar-event"></i> Jadwal kerja</div>
+        <small class="text-muted">{{ today.strftime('%A, %d %B %Y') }}</small>
+      </div>
+      <h5 class="fw-bold text-primary mt-2">09:00 – 18:00</h5>
+      <p class="text-muted small mb-3">Office Hours</p>
+
+      <!-- ✅ FORM CLOCK-IN / OUT -->
+      <form method="post" action="{{ url_for('employee.do_attendance') }}">
+        {% if not attendance_today or not attendance_today.check_in %}
+          <button type="submit" name="action" value="clock_in"
+                  class="btn btn-primary w-100 py-2 mb-2">
+            Clock In
+          </button>
+        {% elif not attendance_today.check_out %}
+          <button type="submit" name="action" value="clock_out"
+                  class="btn btn-danger w-100 py-2">
+            Clock Out
+          </button>
+        {% else %}
+          <p class="text-success fw-semibold mb-0">Absen lengkap ✔</p>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- FORM KIRIM AKTIVITAS + FOTO + LOKASI -->
+  <!-- ===================================================== -->
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <form action="{{ url_for('employee.upload_activity') }}"
+            method="post" enctype="multipart/form-data" id="activityForm">
+
+        <label class="text-muted mb-1">Aktivitas Hari Ini</label>
+        <textarea name="description" class="form-control mb-2"
+                  rows="2" placeholder="Tulis aktivitas kamu di sini..." required></textarea>
+
+        <input type="file" name="photo" class="form-control mb-2"
+               accept="image/*" capture="camera" required>
+
+        <!-- Hidden field lokasi otomatis -->
+        <input type="hidden" name="latitude" id="latitude">
+        <input type="hidden" name="longitude" id="longitude">
+
+        <small id="loc-status" class="text-muted d-block mb-2">📍 Mendeteksi lokasi...</small>
+
+        <button class="btn btn-outline-primary w-100" type="submit">
+          <i class="bi bi-upload"></i> Kirim Aktivitas
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- RIWAYAT AKTIVITAS -->
+  <!-- ===================================================== -->
+  <div class="mt-4">
+    <h6 class="fw-semibold mb-2">Riwayat Aktivitas</h6>
+    {% if employee.activity_log %}
+      <ul class="list-group small">
+        {% for a in employee.activity_log|sort(attribute='created_at', reverse=True) %}
+          <li class="list-group-item">
+            <div class="fw-semibold">
+              {{ a.created_at.strftime('%H:%M') }} — {{ a.description }}
+            </div>
+            {% if a.image %}
+              <img src="{{ url_for('static', filename='uploads/' ~ a.image) }}"
+                   class="mt-2 align-self-center">
+            {% endif %}
+            {% if a.latitude and a.longitude %}
+              <div class="text-muted small">
+                📍 <a href="https://www.google.com/maps?q={{ a.latitude }},{{ a.longitude }}"
+                      target="_blank" class="text-decoration-none">
+                    {{ a.latitude|round(4) }}, {{ a.longitude|round(4) }}
+                </a>
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted small">Belum ada aktivitas yang dilaporkan.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- SCRIPT GPS -->
+<!-- ===================================================== -->
+<script>
+function setLocation() {
+  const status = document.getElementById("loc-status");
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        document.getElementById("latitude").value = pos.coords.latitude;
+        document.getElementById("longitude").value = pos.coords.longitude;
+        status.textContent = "📍 Lokasi terdeteksi (" +
+          pos.coords.latitude.toFixed(4) + ", " +
+          pos.coords.longitude.toFixed(4) + ")";
+      },
+      (err) => {
+        status.textContent = "⚠️ Gagal mendeteksi lokasi: " + err.message;
+      }
+    );
+  } else {
+    status.textContent = "❌ Perangkat tidak mendukung lokasi GPS.";
+  }
+}
+// jalankan otomatis saat halaman dibuka
+setLocation();
+</script>
+
+{% endblock %}

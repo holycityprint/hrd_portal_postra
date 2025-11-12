@@ -1,0 +1,127 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container py-4">
+  <!-- Judul & Profil -->
+  <div class="d-flex align-items-center mb-4">
+    <img src="{{ url_for('static', filename='uploads/' ~ employee.photo) }}"
+         alt="Foto Profil"
+         width="80" height="80"
+         class="rounded-circle shadow-sm me-3"
+         style="object-fit:cover;">
+    <div>
+      <h4 class="fw-bold text-primary mb-0">Aktivitas & Kehadiran — {{ employee.name }}</h4>
+      <div class="text-muted small">
+        {{ employee.position }} | {{ employee.job_type|capitalize }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Tanggal -->
+  <form method="get" class="row g-3 align-items-end mb-4">
+    <div class="col-auto">
+      <label class="form-label mb-0">Mulai</label>
+      <input type="date" name="start_date" value="{{ start_date or '' }}" class="form-control">
+    </div>
+    <div class="col-auto">
+      <label class="form-label mb-0">Sampai</label>
+      <input type="date" name="end_date" value="{{ end_date or '' }}" class="form-control">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary"><i class="bi bi-filter"></i> Filter</button>
+      <a href="{{ url_for('hr.operation_detail', employee_id=employee.id) }}"
+         class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </form>
+
+  <!-- Riwayat Kehadiran -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-light fw-bold">
+      <i class="bi bi-clock-history"></i> Riwayat Clock In / Clock Out
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Tanggal</th>
+            <th>Clock In</th>
+            <th>Clock Out</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in attendance_history %}
+          <tr>
+            <td>{{ a.date.strftime('%d %B %Y') }}</td>
+            <td>{{ a.check_in.strftime('%H:%M') if a.check_in else '-' }}</td>
+            <td>{{ a.check_out.strftime('%H:%M') if a.check_out else '-' }}</td>
+            <td>
+              {% if a.status == 'hadir' %}
+                <span class="badge bg-success">{{ a.status|capitalize }}</span>
+              {% elif a.status == 'izin' %}
+                <span class="badge bg-warning text-dark">{{ a.status|capitalize }}</span>
+              {% elif a.status == 'sakit' %}
+                <span class="badge bg-info text-dark">{{ a.status|capitalize }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ a.status|capitalize }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-3">
+              Belum ada data absensi untuk rentang tanggal ini.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Aktivitas Lapangan -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-light fw-bold">
+      <i class="bi bi-activity"></i> Aktivitas Lapangan
+    </div>
+
+    {% if work_logs %}
+      {% for log in work_logs %}
+      <div class="card-body border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-bold">{{ log.location or 'Lokasi tidak tercatat' }}</span>
+          <small class="text-muted">{{ log.created_at.strftime('%d %B %Y %H:%M') }}</small>
+        </div>
+        <p class="mt-2 mb-3">{{ log.description }}</p>
+
+        <div class="row">
+          <div class="col-md-6 text-center">
+            {% if log.photo_before %}
+              <img src="{{ url_for('static', filename='uploads/activity_photos/' ~ log.photo_before) }}"
+                   class="img-fluid rounded shadow-sm mb-2">
+              <div class="small text-muted">Before</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 text-center">
+            {% if log.photo_after %}
+              <img src="{{ url_for('static', filename='uploads/activity_photos/' ~ log.photo_after) }}"
+                   class="img-fluid rounded shadow-sm mb-2">
+              <div class="small text-muted">After</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="card-body text-center text-muted">
+        Belum ada aktivitas kerja untuk rentang tanggal ini.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Tambahan kecil agar hover tabel lebih hidup -->
+<style>
+  tbody tr:hover { background-color: #f8f9fa; }
+</style>
+{% endblock %}

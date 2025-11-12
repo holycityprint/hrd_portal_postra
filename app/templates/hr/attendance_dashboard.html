@@ -1,0 +1,92 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container py-4">
+  <h4 class="fw-bold text-primary mb-4">
+    <i class="bi bi-calendar-check"></i> Dashboard Absensi Harian
+  </h4>
+
+  <!-- 🔹 Ringkasan Kartu Statistik -->
+  <div class="row text-center g-3">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h6 class="text-muted">Total Karyawan</h6>
+          <h3 class="fw-bold text-primary">{{ total_employee }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h6 class="text-success">Hadir</h6>
+          <h3 class="fw-bold">{{ hadir }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h6 class="text-warning">Izin / Sakit</h6>
+          <h3 class="fw-bold">{{ izin + sakit }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h6 class="text-danger">Alfa</h6>
+          <h3 class="fw-bold">{{ alfa }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-muted mt-3 text-center">
+    Tanggal: {{ today.strftime('%A, %d %B %Y') }}
+  </p>
+
+  <!-- 🔹 Tabel Daftar Absensi -->
+  <h5 class="mt-4"><i class="bi bi-clipboard-check"></i> Daftar Absensi Karyawan Hari Ini (Semua Client)</h5>
+
+  <div class="table-responsive">
+    <table class="table table-striped mt-3 align-middle text-center">
+      <thead class="table-primary">
+        <tr>
+          <th style="width: 40%;">Nama Karyawan</th>
+          <th style="width: 35%;">Client</th>
+          <th style="width: 25%;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp, client in employees %}
+          {% set record = attendance_today.get(emp.id) %}
+          <tr>
+            <td class="text-start ps-3 fw-semibold">{{ emp.name }}</td>
+            <td>{{ client.name }}</td>
+            {% if record %}
+              {% if record.status == 'hadir' %}
+                <td class="text-success fw-bold">Hadir</td>
+              {% elif record.status == 'izin' %}
+                <td class="text-primary fw-bold">Izin</td>
+              {% elif record.status == 'sakit' %}
+                <td class="text-warning fw-bold">Sakit</td>
+              {% else %}
+                <td class="text-danger fw-bold">Alfa</td>
+              {% endif %}
+            {% else %}
+              <td class="text-danger fw-bold">Belum Absen</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if employees|length == 0 %}
+    <p class="text-center text-muted mt-4">Belum ada data karyawan yang terdaftar.</p>
+  {% endif %}
+</div>
+{% endblock %}

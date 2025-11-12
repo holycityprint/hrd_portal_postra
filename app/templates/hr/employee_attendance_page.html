@@ -1,0 +1,71 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container py-4">
+
+  <!-- Profil -->
+  <div class="card mb-3 shadow-sm border-0 bg-danger text-white">
+    <div class="card-body d-flex align-items-center">
+      <img src="{{ url_for('static', filename='uploads/' ~ employee.photo) }}"
+           class="rounded-circle me-3" width="70" height="70"
+           style="object-fit:cover;">
+      <div>
+        <h5 class="mb-0">{{ employee.name }}</h5>
+        <small>{{ employee.position }}</small>
+      </div>
+      <div class="ms-auto text-end">
+        <small>{{ date.today().strftime('%A, %d %B %Y') }}</small><br>
+        <span class="fw-bold">Office Hour: 09.00 - 18.00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Jadwal & Absen -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body text-center">
+      <form method="POST">
+        {% if not attendance or not attendance.check_in %}
+          <button name="action" value="clock_in" class="btn btn-success w-100 mb-2">
+            <i class="bi bi-box-arrow-in-right"></i> Clock In
+          </button>
+        {% else %}
+          <button class="btn btn-outline-success w-100 mb-2" disabled>
+            Masuk: {{ attendance.check_in.strftime('%H:%M:%S') }}
+          </button>
+        {% endif %}
+
+        {% if attendance and not attendance.check_out %}
+          <button name="action" value="clock_out" class="btn btn-danger w-100">
+            <i class="bi bi-box-arrow-right"></i> Clock Out
+          </button>
+        {% elif attendance and attendance.check_out %}
+          <button class="btn btn-outline-secondary w-100" disabled>
+            Pulang: {{ attendance.check_out.strftime('%H:%M:%S') }}
+          </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Aktivitas Hari Ini -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-light fw-bold">
+      <i class="bi bi-list-task"></i> Aktivitas Hari Ini
+    </div>
+    <div class="list-group list-group-flush">
+      {% if activity_logs %}
+        {% for log in activity_logs %}
+          <div class="list-group-item d-flex justify-content-between">
+            <span>{{ log.time.strftime('%H:%M:%S') }}</span>
+            <span>{{ log.activity_type }}</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="list-group-item text-center text-muted">
+          Belum ada aktivitas hari ini.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

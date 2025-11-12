@@ -1,0 +1,109 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <h4 class="fw-bold text-primary mb-4">
+    <i class="bi bi-speedometer2"></i> Dashboard Operasional — {{ today.strftime('%d %B %Y') }}
+  </h4>
+
+  <div class="table-responsive shadow-sm bg-white rounded">
+    <table class="table table-striped align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="text-center">Foto</th>
+          <th>Nama</th>
+          <th>Job Type</th>
+          <th>Status Kehadiran</th>
+          <th>Clock In</th>
+          <th>Clock Out</th>
+          <th>Aktivitas Hari Ini</th>
+          <th class="text-center">Aksi</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for e in employees %}
+        {% set att = attendance_today.get(e.id) %}
+        {% set logs = logs_grouped.get(e.id) %}
+        <tr>
+          <!-- FOTO -->
+          <td class="text-center">
+            {% if e.photo %}
+              <img src="{{ url_for('static', filename='uploads/' ~ e.photo) }}"
+                   alt="{{ e.name }}"
+                   class="rounded-circle shadow-sm"
+                   width="55" height="55"
+                   style="object-fit: cover;">
+            {% else %}
+              <img src="{{ url_for('static', filename='uploads/default_user.png') }}"
+                   alt="default"
+                   class="rounded-circle shadow-sm"
+                   width="55" height="55"
+                   style="object-fit: cover;">
+            {% endif %}
+          </td>
+
+          <!-- Nama -->
+          <td>{{ e.name }}</td>
+
+          <!-- Job Type -->
+          <td>{{ e.job_type|capitalize or 'Belum ditentukan' }}</td>
+
+          <!-- Kehadiran -->
+          <td>
+            {% if att %}
+              {% if att.status == 'hadir' %}
+                <span class="badge bg-success">Hadir</span>
+              {% elif att.status == 'izin' %}
+                <span class="badge bg-warning text-dark">Izin</span>
+              {% elif att.status == 'sakit' %}
+                <span class="badge bg-info text-dark">Sakit</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ att.status|capitalize }}</span>
+              {% endif %}
+            {% else %}
+              <span class="badge bg-light text-muted">Belum Absen</span>
+            {% endif %}
+          </td>
+
+          <!-- Clock In / Out -->
+          <td>{{ att.check_in.strftime('%H:%M') if att and att.check_in else '-' }}</td>
+          <td>{{ att.check_out.strftime('%H:%M') if att and att.check_out else '-' }}</td>
+
+          <!-- Aktivitas Hari Ini -->
+          <td>
+            {% if logs %}
+              <span class="badge bg-primary">{{ logs|length }} Aktivitas</span>
+            {% else %}
+              <span class="text-muted small">Belum ada</span>
+            {% endif %}
+          </td>
+
+          <!-- Tombol Lihat Data -->
+          <td class="text-center">
+            <a href="{{ url_for('hr.operation_detail', employee_id=e.id) }}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-person-badge"></i> Lihat Data
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4">
+            <i class="bi bi-exclamation-circle"></i> Belum ada data karyawan aktif.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<style>
+  tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+  }
+</style>
+{% endblock %}

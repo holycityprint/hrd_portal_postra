@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h4 class="fw-bold text-primary mb-4">
+    <i class="bi bi-speedometer2"></i> Dashboard Utama
+  </h4>
+
+  <div class="row text-center">
+
+    <!-- 🧑‍💼 Kartu HR Development -->
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm p-3 border-0">
+        <i class="bi bi-people fs-1 text-primary"></i>
+        <h5 class="mt-2">HR Development</h5>
+        <p>Aktif: {{ active_employees }}</p>
+        <a href="{{ url_for('hr.dashboard_hr') }}" class="btn btn-outline-primary btn-sm">Lihat</a>
+      </div>
+    </div>
+
+    <!-- ⏰ Kartu Absensi -->
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm p-3 border-0">
+        <i class="bi bi-clock-history fs-1 text-warning"></i>
+        <h5 class="mt-2">Absensi Hari Ini</h5>
+        <p>Hadir: {{ hadir_hari_ini }}</p>
+        <a href="{{ url_for('hr.attendance_dashboard') }}" class="btn btn-outline-warning btn-sm">Lihat</a>
+      </div>
+    </div>
+
+    <!-- 🏢 Kartu Client Aktif -->
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm p-3 border-0">
+        <i class="bi bi-building fs-1 text-info"></i>
+        <h5 class="mt-2">Client Aktif</h5>
+        <p>Total: {{ total_clients }}</p>
+        <a href="{{ url_for('client.dashboard_client') }}" class="btn btn-outline-info btn-sm">Lihat</a>
+      </div>
+    </div>
+
+    <!-- 🚚 Kartu Operasional -->
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm p-3 border-0">
+        <i class="bi bi-truck fs-1 text-success"></i>
+        <h5 class="mt-2">Operasional</h5>
+        <p>Penugasan: {{ total_assignments }}</p>
+        <a href="{{ url_for('hr.operation_dashboard') }}" class="btn btn-outline-success btn-sm">Lihat</a>
+      </div>
+    </div>
+
+    <!-- 🟢 Kartu Baru: Input Data Karyawan -->
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm p-3 border-0">
+        <i class="bi bi-person-plus fs-1 text-success"></i>
+        <h5 class="mt-2">Input Data Karyawan</h5>
+        <p>Tambah karyawan baru</p>
+        <!-- Disamakan gaya tombolnya dengan 'Lihat' di kartu lain -->
+        <a href="{{ url_for('employee_input_bp.add_employee') }}" class="btn btn-outline-success btn-sm">Lihat</a>
+      </div>
+    </div>
+
+    <!-- 🧾 Kartu Kelola Client -->
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm p-3 border-0">
+        <i class="bi bi-building-add fs-1 text-primary"></i>
+        <h5 class="mt-2">Kelola Client</h5>
+        <p>Tambah & lihat data client</p>
+        <a href="{{ url_for('hr.manage_clients') }}" class="btn btn-outline-primary btn-sm">Lihat</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
