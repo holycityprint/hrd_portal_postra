@@ -33,6 +33,12 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hrd_portal.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # --- Konfigurasi cookies agar login berfungsi di mobile (HTTPS) ---
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "None"
+    app.config["REMEMBER_COOKIE_SECURE"] = True
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "None"
+
     # Folder upload + batas ukuran file upload
     app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
     app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # Maks 5 MB
@@ -63,7 +69,6 @@ def create_app():
     # ----------------------------------------------------------
     try:
         from app.client.routes import client_bp
-        # Tambahkan prefix /client supaya URL-nya berada di http://127.0.0.1:5000/client
         app.register_blueprint(client_bp, url_prefix="/client")
         print("✅ Blueprint client berhasil diregistrasi.")
     except Exception as e:
