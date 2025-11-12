@@ -44,9 +44,10 @@ def create_app():
         REMEMBER_COOKIE_SECURE=True,
         REMEMBER_COOKIE_SAMESITE="None",
         REMEMBER_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_DOMAIN=None,            # Biarkan otomatis mengikuti domain aktif
+        SESSION_COOKIE_DOMAIN=".onrender.com", # 🔄 PERUBAHAN 1: Domain pattern untuk subdomains
         PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 7,  # 7 hari login aktif
-        SESSION_PROTECTION="strong"            # Hindari invalid session di HP
+        SESSION_PROTECTION="strong",           # Hindari invalid session di HP
+        SESSION_REFRESH_EACH_REQUEST=True      # 🔄 PERUBAHAN 2: Refresh session tiap request
     )
 
     # Folder upload + batas ukuran file upload
@@ -59,18 +60,32 @@ def create_app():
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==========================================================
-    # 🌐 CORS — hanya domain valid, fix wildcard agar cookie diterima HP
+    # 🌐 CORS — Konfigurasi diperbaiki untuk mobile
     # ==========================================================
     CORS(
         app,
         supports_credentials=True,
         resources={r"/*": {"origins": [
             "https://hrd-portal-postra.onrender.com",  # domain render kamu
-            "http://localhost:5000"                     # untuk testing lokal
+            "http://localhost:5000",                   # untuk testing lokal
+            "http://127.0.0.1:5000"                    # 🔄 PERUBAHAN 3: Tambah localhost IP
         ]}},
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],  # 🔄 PERUBAHAN 4: Tambah Accept header
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # 🔄 PERUBAHAN 5: Tambah PATCH method
+        expose_headers=["Content-Type", "Authorization"]  # 🔄 PERUBAHAN 6: Expose headers untuk mobile
     )
+
+    # ==========================================================
+    # 🔄 PERUBAHAN 7: Tambahkan middleware untuk handle preflight
+    # ==========================================================
+    @app.after_request
+    def after_request(response):
+        """Middleware untuk handle CORS preflight dan security headers"""
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+        response.headers.add('Access-Control-Max-Age', '600')
+        return response
 
     # ==========================================================
     # 🔹 REGISTRASI BLUEPRINTS
@@ -105,6 +120,23 @@ def create_app():
         app.register_blueprint(admin_bp, url_prefix="/admin")
     except ModuleNotFoundError:
         pass
+
+    # ==========================================================
+    # 🔄 PERUBAHAN 8: Tambahkan debug endpoint untuk mobile
+    # ==========================================================
+    @app.route('/api/debug/mobile-session')
+    def debug_mobile_session():
+        """Endpoint untuk debug session di mobile"""
+        from flask import session, request
+        import json
+        debug_info = {
+            'session_keys': list(session.keys()),
+            'user_agent': request.headers.get('User-Agent', ''),
+            'origin': request.headers.get('Origin', ''),
+            'has_cookies': bool(request.cookies),
+            'mobile_compatible': True
+        }
+        return json.dumps(debug_info)
 
     # ==========================================================
     # 🔹 ERROR HANDLER UMUM
