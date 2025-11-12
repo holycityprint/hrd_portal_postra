@@ -35,17 +35,18 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # ==========================================================
-    # 🔐 Konfigurasi agar login tetap bekerja di HP / mobile browser
+    # 🔐 Konfigurasi Session agar login bekerja di HP & HTTPS
     # ==========================================================
     app.config.update(
-        SESSION_COOKIE_SECURE=True,            # wajib True untuk HTTPS
-        SESSION_COOKIE_SAMESITE="None",        # izinkan cookie lintas domain
-        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SECURE=True,            # Cookie hanya dikirim via HTTPS
+        SESSION_COOKIE_SAMESITE="None",        # Diperlukan agar cookie lintas domain bisa diterima
+        SESSION_COOKIE_HTTPONLY=True,          # Lindungi cookie dari akses JS
         REMEMBER_COOKIE_SECURE=True,
         REMEMBER_COOKIE_SAMESITE="None",
         REMEMBER_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_DOMAIN=None,            # auto ikuti domain render
-        PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 7  # 7 hari login aktif
+        SESSION_COOKIE_DOMAIN=None,            # Biarkan otomatis mengikuti domain aktif
+        PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 7,  # 7 hari login aktif
+        SESSION_PROTECTION="strong"            # Hindari invalid session di HP
     )
 
     # Folder upload + batas ukuran file upload
@@ -58,12 +59,15 @@ def create_app():
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==========================================================
-    # 🌐 CORS — dukung akses dari semua domain (Render, APK, localhost)
+    # 🌐 CORS — hanya domain valid, fix wildcard agar cookie diterima HP
     # ==========================================================
     CORS(
         app,
         supports_credentials=True,
-        resources={r"/*": {"origins": ["*", "https://*.onrender.com", "http://localhost:*"]}},
+        resources={r"/*": {"origins": [
+            "https://hrd-portal-postra.onrender.com",  # domain render kamu
+            "http://localhost:5000"                     # untuk testing lokal
+        ]}},
         allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
