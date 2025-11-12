@@ -36,8 +36,10 @@ def create_app():
     # --- Konfigurasi cookies agar login berfungsi di mobile (HTTPS) ---
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "None"
+    app.config["SESSION_COOKIE_HTTPONLY"] = False       # ← tambahan
     app.config["REMEMBER_COOKIE_SECURE"] = True
     app.config["REMEMBER_COOKIE_SAMESITE"] = "None"
+    app.config["REMEMBER_COOKIE_HTTPONLY"] = False      # ← tambahan
 
     # Folder upload + batas ukuran file upload
     app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
