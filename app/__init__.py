@@ -39,15 +39,15 @@ def create_app():
     # ==========================================================
     app.config.update(
         SESSION_COOKIE_SECURE=True,            # Cookie hanya dikirim via HTTPS
-        SESSION_COOKIE_SAMESITE="None",        # Diperlukan agar cookie lintas domain bisa diterima
+        SESSION_COOKIE_SAMESITE="None",        # Cookie diterima lintas domain (Safari fix)
         SESSION_COOKIE_HTTPONLY=True,          # Lindungi cookie dari akses JS
         REMEMBER_COOKIE_SECURE=True,
         REMEMBER_COOKIE_SAMESITE="None",
         REMEMBER_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_DOMAIN=".onrender.com", # 🔄 PERUBAHAN 1: Domain pattern untuk subdomains
+        SESSION_COOKIE_DOMAIN=None,            # 🔧 Perubahan penting: biarkan otomatis
         PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 7,  # 7 hari login aktif
-        SESSION_PROTECTION="strong",           # Hindari invalid session di HP
-        SESSION_REFRESH_EACH_REQUEST=True      # 🔄 PERUBAHAN 2: Refresh session tiap request
+        SESSION_PROTECTION="strong",
+        SESSION_REFRESH_EACH_REQUEST=True
     )
 
     # Folder upload + batas ukuran file upload
@@ -60,31 +60,31 @@ def create_app():
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==========================================================
-    # 🌐 CORS — Konfigurasi diperbaiki untuk mobile
+    # 🌐 CORS — diperbaiki agar aman & kompatibel mobile
     # ==========================================================
     CORS(
         app,
         supports_credentials=True,
         resources={r"/*": {"origins": [
-            "https://hrd-portal-postra.onrender.com",  # domain render kamu
-            "http://localhost:5000",                   # untuk testing lokal
-            "http://127.0.0.1:5000"                    # 🔄 PERUBAHAN 3: Tambah localhost IP
+            "https://hrd-portal-postra.onrender.com",
+            "http://localhost:5000",
+            "http://127.0.0.1:5000"
         ]}},
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],  # 🔄 PERUBAHAN 4: Tambah Accept header
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # 🔄 PERUBAHAN 5: Tambah PATCH method
-        expose_headers=["Content-Type", "Authorization"]  # 🔄 PERUBAHAN 6: Expose headers untuk mobile
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        expose_headers=["Content-Type", "Authorization"]
     )
 
     # ==========================================================
-    # 🔄 PERUBAHAN 7: Tambahkan middleware untuk handle preflight
+    # 🧩 Tambahkan middleware tambahan agar CORS & cookie sinkron
     # ==========================================================
     @app.after_request
     def after_request(response):
-        """Middleware untuk handle CORS preflight dan security headers"""
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
-        response.headers.add('Access-Control-Max-Age', '600')
+        """Middleware untuk handle CORS preflight & cookie di mobile"""
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Requested-With,Accept"
+        response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+        response.headers["Access-Control-Max-Age"] = "600"
         return response
 
     # ==========================================================
@@ -122,48 +122,32 @@ def create_app():
         pass
 
     # ==========================================================
-    # 🔄 PERUBAHAN 8: Tambahkan debug endpoint untuk mobile
+    # 🧪 Debug endpoint (cek dari HP)
     # ==========================================================
-    @app.route('/api/debug/mobile-session')
+    @app.route("/api/debug/mobile-session")
     def debug_mobile_session():
-        """Endpoint untuk debug session di mobile"""
-        from flask import session, request
-        import json
-        debug_info = {
-            'session_keys': list(session.keys()),
-            'user_agent': request.headers.get('User-Agent', ''),
-            'origin': request.headers.get('Origin', ''),
-            'has_cookies': bool(request.cookies),
-            'mobile_compatible': True
-        }
-        return json.dumps(debug_info)
+        from flask import session, request, jsonify
+        return jsonify({
+            "session_keys": list(session.keys()),
+            "cookies": bool(request.cookies),
+            "origin": request.headers.get("Origin", ""),
+            "user_agent": request.headers.get("User-Agent", ""),
+        })
 
     # ==========================================================
     # 🔹 ERROR HANDLER UMUM
     # ==========================================================
     @app.errorhandler(404)
     def not_found_error(error):
-        return (
-            "<h3 style='text-align:center;margin-top:40px'>"
-            "Halaman tidak ditemukan (404)</h3>",
-            404,
-        )
+        return "<h3 style='text-align:center;margin-top:40px'>Halaman tidak ditemukan (404)</h3>", 404
 
     @app.errorhandler(401)
     def unauthorized_error(error):
-        return (
-            "<h3 style='text-align:center;margin-top:40px'>"
-            "Anda belum login atau tidak memiliki izin (401)</h3>",
-            401,
-        )
+        return "<h3 style='text-align:center;margin-top:40px'>Anda belum login atau tidak memiliki izin (401)</h3>", 401
 
     @app.errorhandler(500)
     def internal_error(error):
-        return (
-            "<h3 style='text-align:center;margin-top:40px'>"
-            "Terjadi kesalahan pada server (500)</h3>",
-            500,
-        )
+        return "<h3 style='text-align:center;margin-top:40px'>Terjadi kesalahan pada server (500)</h3>", 500
 
     # ==========================================================
     # 🔹 INISIALISASI AKUN DEFAULT
@@ -172,7 +156,7 @@ def create_app():
         try:
             init_default_accounts()
         except Exception as e:
-            print(f"ℹ️  Tidak dapat membuat akun default: {e}")
+            print(f"ℹ️ Tidak dapat membuat akun default: {e}")
 
     return app
 
@@ -208,4 +192,4 @@ def init_default_accounts():
         print("✅ Default users initialized (admin / employee / client).")
 
     except OperationalError:
-        print("ℹ️  Database belum siap, akun default dilewati sementara.")
+        print("ℹ️ Database belum siap, akun default dilewati sementara.")
