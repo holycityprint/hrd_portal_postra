@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import User
-# ✅ Import Form yang baru dibuat (Wajib ada agar tidak Error 500)
+# ✅ Import Form
 from app.auth.forms import LoginForm 
 
 # ======================================================
@@ -19,51 +19,59 @@ def login():
     if current_user.is_authenticated:
         return redirect_user_by_role(current_user)
 
-    # ✅ Inisialisasi Form (SOLUSI ERROR 500)
     form = LoginForm()
 
-    # ✅ Ganti "if request.method == 'POST'" dengan validasi form otomatis
-    # validate_on_submit() otomatis mengecek CSRF token agar aman di HP/Render
+    # --- [DEBUG LOG] ---
+    # Akan muncul di Log Render jika tombol login ditekan
+    if request.method == 'POST':
+        print(f"🔍 [DEBUG] Percobaan Login dari IP: {request.remote_addr}")
+
+    # ✅ Validasi Form (Cek CSRF & Kelengkapan Data)
     if form.validate_on_submit():
         
-        # Ambil data dari form dan bersihkan spasi (Logic stripping kamu tetap dipakai)
         username = form.username.data.strip()
         password = form.password.data.strip()
+
+        print(f"🔍 [DEBUG] Mencari user: '{username}' di database...")
 
         user = User.query.filter_by(username=username).first()
 
         # --- LOGIKA PENGECEKAN ---
         if not user:
+            print(f"❌ [DEBUG] User '{username}' TIDAK DITEMUKAN.")
             flash('❌ Username tidak ditemukan.', 'danger')
-            # PENTING: Kirim form=form agar HTML tidak crash saat reload
             return render_template('auth/login.html', form=form)
 
         if not user.check_password(password):
+            print(f"❌ [DEBUG] Password SALAH untuk user '{username}'.")
             flash('❌ Password salah.', 'danger')
             return render_template('auth/login.html', form=form)
 
         if not user.active:
+            print(f"⚠️ [DEBUG] Akun '{username}' tidak aktif.")
             flash('⚠️ Akun ini tidak aktif.', 'warning')
             return render_template('auth/login.html', form=form)
 
         # --- JIKA SUKSES ---
+        print(f"✅ [DEBUG] Login SUKSES untuk: {username}")
         login_user(user) 
         flash(f'✅ Selamat datang, {user.username}!', 'success')
         
-        # Cek apakah ada parameter 'next' dari URL
         next_page = request.args.get('next')
         if next_page:
             return redirect(next_page)
         
         return redirect_user_by_role(user)
 
-    # Jika ada error validasi (misal token expired), tampilkan flash message
+    # --- [DEBUG KHUSUS] JIKA VALIDASI GAGAL ---
+    # Ini bagian paling penting untuk melihat kenapa login mental
     if form.errors:
+        print(f"⚠️ [DEBUG] FORM ERROR: {form.errors}")
+        # Biasanya errornya: {'csrf_token': ['The CSRF token is missing.']}
+        
         for err in form.errors.values():
             flash(f'⚠️ {err[0]}', 'danger')
 
-    # GET REQUEST (Saat halaman dibuka pertama kali)
-    # ✅ Kirim variable form=form ke HTML (SOLUSI ERROR 500)
     return render_template('auth/login.html', form=form)
 
 
