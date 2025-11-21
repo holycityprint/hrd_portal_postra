@@ -1,66 +1,285 @@
-{% extends 'layout.html' %}
+{% extends 'base.html' %}
+
 {% block content %}
+<div class="container-fluid p-0 font-corp">
 
-<h3 class="fw-bold text-primary mb-4">
-  <i class="bi bi-speedometer2"></i> Dashboard HR Development
-</h3>
-
-<div class="row g-4">
-  <!-- Total Karyawan -->
-  <div class="col-md-3">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body text-center">
-        <div class="display-6 text-primary"><i class="bi bi-people-fill"></i></div>
-        <h5 class="fw-bold mt-2">Total Karyawan</h5>
-        <p class="lead fw-bold text-primary mb-1">{{ total_employees }}</p>
-        <small class="text-muted d-block mb-3">Jumlah seluruh karyawan</small>
-        <a href="{{ url_for('hr.manage_employees') }}" 
-           class="btn btn-outline-primary btn-sm w-100">Lihat Data</a>
-      </div>
+  <!-- Header Dashboard -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold text-dark mb-1">Dashboard HR & Operasional</h4>
+      <p class="text-muted small mb-0">{{ today.strftime('%d %B %Y') }}</p>
+    </div>
+    <div>
+        <a href="{{ url_for('hr.export_monthly_report') }}" class="btn btn-success btn-sm shadow-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-2"></i>Download Laporan Absen
+        </a>
     </div>
   </div>
 
-  <!-- Karyawan Aktif -->
-  <div class="col-md-3">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body text-center">
-        <div class="display-6 text-success"><i class="bi bi-person-check-fill"></i></div>
-        <h5 class="fw-bold mt-2">Karyawan Aktif</h5>
-        <p class="lead fw-bold text-success mb-1">{{ active_employees }}</p>
-        <small class="text-muted d-block mb-3">Status aktif bekerja</small>
-        <a href="{{ url_for('hr.manage_employees') }}" 
-           class="btn btn-outline-success btn-sm w-100">Lihat Data</a>
-      </div>
+  <!-- Kartu Statistik Utama -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-bold">Total Personil</div>
+                <div class="fs-3 fw-bold text-dark mt-2">{{ total_employees }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-bold">Hadir Hari Ini</div>
+                <div class="fs-3 fw-bold text-dark mt-2">{{ hadir_hari_ini }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-bold">Total Client</div>
+                <div class="fs-3 fw-bold text-dark mt-2">{{ total_clients }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-bold">Penugasan Aktif</div>
+                <div class="fs-3 fw-bold text-dark mt-2">{{ total_assignments }}</div>
+            </div>
+        </div>
     </div>
   </div>
 
-  <!-- Client Aktif -->
-  <div class="col-md-3">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body text-center">
-        <div class="display-6 text-info"><i class="bi bi-building"></i></div>
-        <h5 class="fw-bold mt-2">Client Aktif</h5>
-        <p class="lead fw-bold text-info mb-1">{{ total_clients }}</p>
-        <small class="text-muted d-block mb-3">Semua client terdaftar</small>
-        <a href="{{ url_for('hr.manage_clients') }}" 
-           class="btn btn-outline-info btn-sm w-100">Lihat Data</a>
+  <!-- GRAFIK SECTION -->
+  <div class="row g-4">
+      
+      <!-- CHART 1: KOMPOSISI POSISI (BISA DIKLIK) -->
+      <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white py-3 border-bottom-0">
+                  <h6 class="mb-0 fw-bold text-primary">
+                      <i class="bi bi-bar-chart-fill me-2"></i>Jumlah Personil per Posisi
+                  </h6>
+                  <small class="text-muted">Klik pada batang grafik untuk melihat detail karyawan.</small>
+              </div>
+              <div class="card-body">
+                  <canvas id="jobChart" height="250"></canvas>
+              </div>
+          </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Penugasan Aktif -->
-  <div class="col-md-3">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body text-center">
-        <div class="display-6 text-warning"><i class="bi bi-truck"></i></div>
-        <h5 class="fw-bold mt-2">Penugasan Aktif</h5>
-        <p class="lead fw-bold text-warning mb-1">{{ total_assignments }}</p>
-        <small class="text-muted d-block mb-3">Jumlah penempatan berjalan</small>
-        <a href="{{ url_for('hr.operation_dashboard') }}" 
-           class="btn btn-outline-warning btn-sm w-100">Lihat Data</a>
+      <!-- CHART 2: SEBARAN CLIENT -->
+      <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white py-3 border-bottom-0">
+                  <h6 class="mb-0 fw-bold text-success">
+                      <i class="bi bi-building me-2"></i>Sebaran Karyawan per Client
+                  </h6>
+              </div>
+              <div class="card-body">
+                  <canvas id="clientChart" height="250"></canvas>
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL KARYAWAN (Hidden by default) -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold" id="modalTitle">Detail Karyawan</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="bg-light sticky-top">
+                    <tr>
+                        <th class="px-4 py-3">Nama</th>
+                        <th>Jabatan</th>
+                        <th>Lokasi Client</th>
+                        <th>Tgl Gabung</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody">
+                    <!-- Data akan diisi oleh Javascript -->
+                </tbody>
+            </table>
+        </div>
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="text-center py-5 d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted small">Mengambil data...</p>
+        </div>
+        <!-- Pesan Kosong -->
+        <div id="emptyMessage" class="text-center py-5 d-none">
+            <i class="bi bi-folder-x fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Tidak ada data karyawan aktif.</p>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Load Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // 1. DATA DARI FLASK
+    const jobLabels = {{ job_labels | tojson }};
+    const jobCounts = {{ job_counts | tojson }};
+    const clientLabels = {{ client_labels | tojson }};
+    const clientCounts = {{ client_counts | tojson }};
+
+    // 2. KONFIGURASI CHART 1 (JOB TYPE - INTERAKTIF)
+    const ctxJob = document.getElementById('jobChart').getContext('2d');
+    const jobChart = new Chart(ctxJob, {
+        type: 'bar',
+        data: {
+            labels: jobLabels,
+            datasets: [{
+                label: 'Jumlah Personil',
+                data: jobCounts,
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderWidth: 1,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw + ' Personil';
+                        }
+                    }
+                }
+            },
+            // --- EVENT CLICK HANDLER ---
+            onClick: (e) => {
+                const points = jobChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                if (points.length) {
+                    const firstPoint = points[0];
+                    const label = jobChart.data.labels[firstPoint.index]; // Ambil nama posisi (misal: Security)
+                    showDetails(label); // Panggil fungsi modal
+                }
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+            }
+        }
+    });
+
+    // 3. KONFIGURASI CHART 2 (CLIENT - PIE CHART)
+    const ctxClient = document.getElementById('clientChart').getContext('2d');
+    new Chart(ctxClient, {
+        type: 'doughnut',
+        data: {
+            labels: clientLabels,
+            datasets: [{
+                data: clientCounts,
+                backgroundColor: [
+                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'
+                ],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: {size: 11} } }
+            }
+        }
+    });
+
+    // 4. FUNGSI MENAMPILKAN MODAL DAN FETCH DATA
+    function showDetails(jobType) {
+        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+        const title = document.getElementById('modalTitle');
+        const tbody = document.getElementById('modalTableBody');
+        const loader = document.getElementById('loadingSpinner');
+        const emptyMsg = document.getElementById('emptyMessage');
+
+        // Reset Tampilan Modal
+        title.textContent = `Daftar Karyawan: ${jobType}`;
+        tbody.innerHTML = '';
+        tbody.classList.add('d-none');
+        emptyMsg.classList.add('d-none');
+        loader.classList.remove('d-none');
+        
+        modal.show();
+
+        // --- PERBAIKAN UTAMA DI SINI (MENGATASI 404) ---
+        // Menggunakan url_for Flask di dalam template Jinja untuk membuat URL yang benar
+        var urlTemplate = "{{ url_for('hr.get_employees_by_job', job_type='PLACEHOLDER') }}";
+        var finalUrl = urlTemplate.replace('PLACEHOLDER', encodeURIComponent(jobType));
+
+        // Fetch Data dari URL yang sudah benar
+        fetch(finalUrl)
+            .then(response => {
+                if (!response.ok) { throw new Error("HTTP status " + response.status); }
+                return response.json();
+            })
+            .then(data => {
+                loader.classList.add('d-none');
+                
+                if (data.length === 0) {
+                    emptyMsg.classList.remove('d-none');
+                } else {
+                    tbody.classList.remove('d-none');
+                    data.forEach(emp => {
+                        const row = `
+                            <tr>
+                                <td class="px-4">
+                                    <div class="d-flex align-items-center">
+                                        <img src="${emp.photo}" class="rounded-circle me-2 border" width="35" height="35" style="object-fit:cover;">
+                                        <div class="fw-bold text-dark">${emp.name}</div>
+                                    </div>
+                                </td>
+                                <td>${emp.position || '-'}</td>
+                                <td><span class="badge bg-light text-dark border">${emp.client}</span></td>
+                                <td class="text-muted small">${emp.join_date}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                loader.classList.add('d-none');
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">Gagal memuat data (' + err + ')</td></tr>';
+                tbody.classList.remove('d-none');
+            });
+    }
+});
+</script>
+
+<style>
+    .font-corp { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .cursor-pointer { cursor: pointer; }
+</style>
 
 {% endblock %}

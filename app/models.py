@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # ============================================================
-# 1️⃣  HR DEVELOPMENT — Data Karyawan
+# 1️⃣ HR DEVELOPMENT — Data Karyawan
 # ============================================================
 class Employee(db.Model):
     __tablename__ = "employees"
@@ -24,21 +24,20 @@ class Employee(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user = db.relationship("User", backref="employee_account", uselist=False)
 
-    # Relasi lain
-    assignments = db.relationship("Assignment", backref="employee", lazy=True)
-    attendance_records = db.relationship("Attendance", backref="employee", lazy=True)
-
-    # Relasi baru
-    personal_detail = db.relationship("EmployeePersonalDetail", backref="employee", uselist=False)
-    documents = db.relationship("EmployeeDocument", backref="employee", lazy=True)
-    activity_log = db.relationship("ActivityLog", backref="employee", lazy=True)
+    # Relasi lain (DITAMBAHKAN: cascade="all, delete-orphan")
+    # Ini mencegah error "NOT NULL constraint" saat menghapus karyawan
+    assignments = db.relationship("Assignment", backref="employee", lazy=True, cascade="all, delete-orphan")
+    attendance_records = db.relationship("Attendance", backref="employee", lazy=True, cascade="all, delete-orphan")
+    personal_detail = db.relationship("EmployeePersonalDetail", backref="employee", uselist=False, cascade="all, delete-orphan")
+    documents = db.relationship("EmployeeDocument", backref="employee", lazy=True, cascade="all, delete-orphan")
+    activity_log = db.relationship("ActivityLog", backref="employee", lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Employee {self.name} ({self.job_type})>"
 
 
 # ============================================================
-# 2️⃣  CLIENT — Perusahaan pengguna jasa
+# 2️⃣ CLIENT — Perusahaan pengguna jasa
 # ============================================================
 class Client(db.Model):
     __tablename__ = "clients"
@@ -49,21 +48,20 @@ class Client(db.Model):
     contact_person = db.Column(db.String(100))
     phone = db.Column(db.String(50))
 
-    # Relasi ke User (akun login client)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True)
     user = db.relationship("User", back_populates="client_account")
 
-    # Relasi ke tabel lain
-    contracts = db.relationship("Contract", backref="client", lazy=True)
-    employees = db.relationship("Employee", backref="client", lazy=True)
-    assignments = db.relationship("Assignment", backref="client", lazy=True)
+    # Client jarang dihapus, tapi jika dihapus, kontrak/karyawan/assignment ikut terhapus
+    contracts = db.relationship("Contract", backref="client", lazy=True, cascade="all, delete-orphan")
+    employees = db.relationship("Employee", backref="client", lazy=True) # Karyawan tidak dihapus, hanya client_id jadi NULL (default)
+    assignments = db.relationship("Assignment", backref="client", lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Client {self.name}>"
 
 
 # ============================================================
-# 3️⃣  CONTRACT — Hubungan kerja sama
+# 3️⃣ CONTRACT — Hubungan kerja sama
 # ============================================================
 class Contract(db.Model):
     __tablename__ = "contracts"
@@ -80,7 +78,7 @@ class Contract(db.Model):
 
 
 # ============================================================
-# 4️⃣  ATTENDANCE — Kehadiran
+# 4️⃣ ATTENDANCE — Kehadiran
 # ============================================================
 class Attendance(db.Model):
     __tablename__ = "attendance"
@@ -98,7 +96,7 @@ class Attendance(db.Model):
 
 
 # ============================================================
-# 5️⃣  ASSIGNMENT — Penugasan
+# 5️⃣ ASSIGNMENT — Penugasan
 # ============================================================
 class Assignment(db.Model):
     __tablename__ = "assignments"
@@ -117,7 +115,7 @@ class Assignment(db.Model):
 
 
 # ============================================================
-# 6️⃣  USER — Akun login
+# 6️⃣ USER — Akun login
 # ============================================================
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -142,21 +140,25 @@ class User(UserMixin, db.Model):
 
 
 # ============================================================
-# 7️⃣  ACTIVITY LOG — Aktivitas pekerjaan harian
+# 7️⃣ ACTIVITY LOG — Aktivitas pekerjaan harian
 # ============================================================
 class ActivityLog(db.Model):
     __tablename__ = "activity_log"
 
     id = db.Column(db.Integer, primary_key=True)
-    employee_id = db.Column(db.Integer, db.ForeignKey("employees.id"))
+    employee_id = db.Column(db.Integer, db.ForeignKey("employees.id"), nullable=False)
     description = db.Column(db.Text)
-    location = db.Column(db.String(255))
-    photo = db.Column(db.String(255))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    image = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<ActivityLog Emp={self.employee_id} Desc={self.description[:10]}>"
 
 
 # ============================================================
-# 8️⃣  EMPLOYEE PERSONAL DETAIL — Data pribadi karyawan
+# 8️⃣ EMPLOYEE PERSONAL DETAIL — Data pribadi karyawan
 # ============================================================
 class EmployeePersonalDetail(db.Model):
     __tablename__ = "employee_personal_details"
@@ -214,14 +216,14 @@ class EmployeePersonalDetail(db.Model):
 
 
 # ============================================================
-# 9️⃣  EMPLOYEE DOCUMENT — Dokumen pribadi (PDF, foto, dll)
+# 9️⃣ EMPLOYEE DOCUMENT — Dokumen pribadi (PDF, foto, dll)
 # ============================================================
 class EmployeeDocument(db.Model):
     __tablename__ = "employee_documents"
 
     id = db.Column(db.Integer, primary_key=True)
     employee_id = db.Column(db.Integer, db.ForeignKey("employees.id"), nullable=False)
-    document_type = db.Column(db.String(100))   # IJAZAH, KTP, FOTO, dst.
+    document_type = db.Column(db.String(100))
     file_path = db.Column(db.String(255))
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 

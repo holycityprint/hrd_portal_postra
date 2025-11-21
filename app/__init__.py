@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from werkzeug.middleware.proxy_fix import ProxyFix   # ✅ Tambahan penting
+from flask_migrate import Migrate   
 import os
 
 # ==========================================================
@@ -9,6 +10,7 @@ import os
 # ==========================================================
 db = SQLAlchemy()
 login_manager = LoginManager()
+migrate = Migrate() 
 
 # --- Konfigurasi default Flask‑Login ---
 login_manager.login_view = "auth.login"
@@ -52,6 +54,7 @@ def create_app():
     # Inisialisasi ekstensi
     db.init_app(app)
     login_manager.init_app(app)
+    migrate.init_app(app, db)  
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==========================================================
