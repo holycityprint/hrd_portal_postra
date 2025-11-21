@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from werkzeug.middleware.proxy_fix import ProxyFix   # ✅ Tambahan penting
+from werkzeug.middleware.proxy_fix import ProxyFix   
 from flask_migrate import Migrate   
 import os
 
@@ -35,17 +35,30 @@ def create_app():
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # -------------------- Konfigurasi dasar --------------------
-    app.config["SECRET_KEY"] = "kuncirahasia_superaman"
+    # Mengambil SECRET_KEY dari environment Render jika ada, fallback ke string biasa
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "kuncirahasia_superaman")
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hrd_portal.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # --- Konfigurasi cookie aman & kompatibel mobile ---
-    app.config["SESSION_COOKIE_SAMESITE"] = "None"
-    app.config["SESSION_COOKIE_SECURE"] = True
-    app.config["SESSION_COOKIE_HTTPONLY"] = False
-    app.config["REMEMBER_COOKIE_SAMESITE"] = "None"
-    app.config["REMEMBER_COOKIE_SECURE"] = True
-    app.config["REMEMBER_COOKIE_HTTPONLY"] = False
+    # ==========================================================
+    # 🔧 UPDATE PENTING: FIX LOGIN DI HP & RENDER
+    # ==========================================================
+    # Cek apakah aplikasi berjalan di Render (Production) atau Local
+    is_production = os.environ.get('RENDER') is not None
+
+    # Gunakan 'Lax' agar cookie stabil di browser HP (Chrome/Safari)
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    
+    # 'Secure' harus True di Render (HTTPS), tapi False di Local (HTTP)
+    # Jika ini dipaksa True di local, login akan gagal terus.
+    app.config["SESSION_COOKIE_SECURE"] = is_production 
+    
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "Lax"
+    app.config["REMEMBER_COOKIE_SECURE"] = is_production
+    app.config["REMEMBER_COOKIE_HTTPONLY"] = True
+    # ==========================================================
 
     # Folder upload + batas ukuran file upload
     app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
@@ -58,7 +71,7 @@ def create_app():
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==========================================================
-    # 🔹 REGISTRASI BLUEPRINTS
+    # 🔹 REGISTRASI BLUEPRINTS (TIDAK ADA YANG DIUBAH)
     # ==========================================================
     from app.routes import main_bp
     app.register_blueprint(main_bp)
@@ -119,9 +132,12 @@ def create_app():
         )
 
     # ==========================================================
-    # 🔹 INISIALISASI AKUN DEFAULT
+    # 🔹 INISIALISASI DB & AKUN DEFAULT
     # ==========================================================
     with app.app_context():
+        # ✅ UPDATE: Pastikan tabel dibuat ulang jika database ter-reset di Render
+        db.create_all() 
+        
         try:
             init_default_accounts()
         except Exception as e:
