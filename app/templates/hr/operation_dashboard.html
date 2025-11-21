@@ -104,8 +104,11 @@
 
   <!-- 3. TABEL DATA OPERASIONAL -->
   <div class="card card-corp border-top-primary shadow-sm">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0" id="opsTable">
+    <!-- ✅ PERBAIKAN DISINI: Style overflow-x manual untuk memastikan scroll -->
+    <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+      
+      <!-- ✅ PERBAIKAN: style="white-space: nowrap;" agar tabel melebar ke samping -->
+      <table class="table table-hover align-middle mb-0" id="opsTable" style="white-space: nowrap;">
         <thead class="bg-light text-secondary small text-uppercase">
           <tr>
             <th class="ps-4 py-3">Personil</th>
@@ -113,7 +116,7 @@
             <th class="py-3 text-center">Status Kehadiran</th>
             <th class="py-3 text-center">Jam Masuk</th>
             <th class="py-3 text-center">Jam Pulang</th>
-            <th class="py-3" style="width: 200px;">Progress Log Aktivitas</th>
+            <th class="py-3" style="min-width: 200px;">Progress Log Aktivitas</th>
             <th class="py-3 text-center no-print">Aksi</th>
           </tr>
         </thead>
