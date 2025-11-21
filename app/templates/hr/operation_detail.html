@@ -48,7 +48,7 @@
         .timeline-item { page-break-inside: avoid; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px; }
         
         .activity-image {
-            max-height: 80px !important;
+            max-height: 100px !important;
             width: auto !important;
             border: 1px solid #000 !important;
             margin-top: 5px;
@@ -115,7 +115,8 @@
             <div class="no-print me-3">
               <img src="{{ url_for('static', filename='uploads/' ~ (employee.photo or 'default_user.png')) }}"
                    class="rounded-circle border shadow-sm"
-                   width="60" height="60" style="object-fit:cover;">
+                   width="60" height="60" style="object-fit:cover;"
+                   onerror="this.src='{{ url_for('static', filename='img/default_user.png') }}'">
             </div>
             <div>
               <h5 class="fw-bold text-dark mb-0">{{ employee.name }}</h5>

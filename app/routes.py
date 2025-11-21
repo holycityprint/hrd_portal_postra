@@ -31,7 +31,6 @@ def dashboard():
 
         # ============================================================
         # JUMLAH HADIR HARI INI
-        #   gunakan kolom Attendance.date dan trim/lower status
         # ============================================================
         hadir_hari_ini = Attendance.query.filter(
             Attendance.date == today,
